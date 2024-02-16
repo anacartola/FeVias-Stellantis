@@ -1,4 +1,4 @@
---Tables, constraints e coment·rios
+--Tables, constraints e coment√°rios
 CREATE TABLE t_sif_bateria (
     id_bateria        NUMBER(7) NOT NULL,
     id_bateria_carreg NUMBER(7) NOT NULL,
@@ -9,7 +9,7 @@ COMMENT ON COLUMN t_sif_bateria.id_bateria IS
     'Id da bateria';
 
 COMMENT ON COLUMN t_sif_bateria.ds_bateria IS
-    'DescriÁ„o da Bateria';
+    'Descri√ß√£o da Bateria';
 
 ALTER TABLE t_sif_bateria ADD CONSTRAINT t_sif_bateria_pk PRIMARY KEY ( id_bateria );
 
@@ -23,7 +23,7 @@ COMMENT ON COLUMN t_sif_bateria_carreg.id_bateria_carreg IS
     'Id do carregamento da bateria';
 
 COMMENT ON COLUMN t_sif_bateria_carreg.ds_bateria_carreg IS
-    'DescriÁ„o do carregamento da bateria';
+    'Descri√ß√£o do carregamento da bateria';
 
 COMMENT ON COLUMN t_sif_bateria_carreg.perc_carga_bateria IS
     'Percentual da carga da bateria';
@@ -37,7 +37,7 @@ CREATE TABLE t_sif_bateria_estacao (
 );
 
 COMMENT ON COLUMN t_sif_bateria_estacao.dt_transferencia IS
-    'Data e Hora de transferÍncia de bateria para a estaÁ„o';
+    'Data e Hora de transfer√™ncia de bateria para a esta√ß√£o';
 
 ALTER TABLE t_sif_bateria_estacao ADD CONSTRAINT t_sif_bateria_estacao_pk PRIMARY KEY ( id_estacao,
                                                                                         id_bateria );
@@ -62,10 +62,10 @@ CREATE TABLE t_sif_concessionaria (
 );
 
 COMMENT ON COLUMN t_sif_concessionaria.id_concessionaria IS
-    'Id da concession·ria';
+    'Id da concession√°ria';
 
 COMMENT ON COLUMN t_sif_concessionaria.nm_concessionaria IS
-    'Nome da concession·ria';
+    'Nome da concession√°ria';
 
 ALTER TABLE t_sif_concessionaria ADD CONSTRAINT t_sif_concessionaria_pk PRIMARY KEY ( id_concessionaria );
 
@@ -95,13 +95,13 @@ CREATE TABLE t_sif_estacao (
 );
 
 COMMENT ON COLUMN t_sif_estacao.id_estacao IS
-    'id da estaÁ„o';
+    'id da esta√ß√£o';
 
 COMMENT ON COLUMN t_sif_estacao.nm_estacao IS
-    'Nome da estaÁ„o';
+    'Nome da esta√ß√£o';
 
 COMMENT ON COLUMN t_sif_estacao.vr_carrega_bateria IS
-    'Para ''S'', bateria È carreg·vel na estaÁ„o e ''N'' bateria n„o È carreg·vel na estaÁ„o';
+    'Para ''S'', bateria √© carreg√°vel na esta√ß√£o e ''N'' bateria n√£o √© carreg√°vel na esta√ß√£o';
 
 ALTER TABLE t_sif_estacao
     ADD CONSTRAINT ck_sif_estacao_carrega_bateria CHECK ( vr_carrega_bateria = 'S'
@@ -143,7 +143,7 @@ CREATE TABLE t_sif_loc_bateria (
 );
 
 COMMENT ON COLUMN t_sif_loc_bateria.dt_transferencia IS
-    'Data e Hora de transferÍncia de bateria para a locomotiva';
+    'Data e Hora de transfer√™ncia de bateria para a locomotiva';
 
 ALTER TABLE t_sif_loc_bateria ADD CONSTRAINT t_sif_loc_bateria_pk PRIMARY KEY ( id_locomotiva,
                                                                                 id_bateria );
@@ -156,16 +156,16 @@ CREATE TABLE t_sif_loc_vagao (
 );
 
 COMMENT ON COLUMN t_sif_loc_vagao.id_locomotiva IS
-    'Id da locomotiva relacionado ao vag„o';
+    'Id da locomotiva relacionado ao vag√£o';
 
 COMMENT ON COLUMN t_sif_loc_vagao.id_vagao IS
     'Id do vagao relacionado a locomotiva';
 
 COMMENT ON COLUMN t_sif_loc_vagao.vl_peso IS
-    'Peso do vag„o';
+    'Peso do vag√£o';
 
 COMMENT ON COLUMN t_sif_loc_vagao.dt_atualizacao_peso IS
-    'Data e Hora da atualizaÁ„o do peso';
+    'Data e Hora da atualiza√ß√£o do peso';
 
 ALTER TABLE t_sif_loc_vagao ADD CONSTRAINT ck_sif_loc_vagao_peso CHECK ( vl_peso > 0 );
 
@@ -179,10 +179,10 @@ CREATE TABLE t_sif_localiza_estacao (
 );
 
 COMMENT ON COLUMN t_sif_localiza_estacao.id_loc_estacao IS
-    'Id da localizaÁ„o da estaÁ„o';
+    'Id da localiza√ß√£o da esta√ß√£o';
 
 COMMENT ON COLUMN t_sif_localiza_estacao.nm_localizacao IS
-    'Nome da localizaÁ„o como cidade/estado';
+    'Nome da localiza√ß√£o como cidade/estado';
 
 ALTER TABLE t_sif_localiza_estacao ADD CONSTRAINT t_sif_localiza_estacao_pk PRIMARY KEY ( id_loc_estacao );
 
@@ -199,7 +199,7 @@ COMMENT ON COLUMN t_sif_locomotiva.nm_locomotiva IS
     'Nome da locomotiva';
 
 COMMENT ON COLUMN t_sif_locomotiva.nr_vagoes IS
-    'Quantidade de vagıes nessa locomotiva';
+    'Quantidade de vag√µes nessa locomotiva';
 
 ALTER TABLE t_sif_locomotiva ADD CONSTRAINT ck_sif_locomotiva_vagoes CHECK ( nr_vagoes > 0 );
 
@@ -220,16 +220,16 @@ COMMENT ON COLUMN t_sif_registro.id_registro IS
     'Id do registro';
 
 COMMENT ON COLUMN t_sif_registro.hr_saida IS
-    'Hora da saÌda';
+    'Hora da sa√≠da';
 
 COMMENT ON COLUMN t_sif_registro.hr_chegada IS
     'Hora da chegada';
 
 COMMENT ON COLUMN t_sif_registro.cd_cidade_saida IS
-    'CÛdigo/Id da cidade de saÌda';
+    'C√≥digo/Id da cidade de sa√≠da';
 
 COMMENT ON COLUMN t_sif_registro.cd_cidade_chegada IS
-    'CÛdigo/Id da cidade dechegada';
+    'C√≥digo/Id da cidade dechegada';
 
 ALTER TABLE t_sif_registro ADD CONSTRAINT t_sif_registro_pk PRIMARY KEY ( id_registro );
 
@@ -260,13 +260,13 @@ CREATE TABLE t_sif_vagao (
 );
 
 COMMENT ON COLUMN t_sif_vagao.id_vagao IS
-    'Id do vagao	';
+    'Id do vag√£o	';
 
 COMMENT ON COLUMN t_sif_vagao.tp_vagao IS
-    'Tipo do vag„o: para pessoas ''P'' e para objetos ''O''';
+    'Tipo do vag√£o: para pessoas ''P'' e para objetos ''O''';
 
 COMMENT ON COLUMN t_sif_vagao.vl_peso_vagao IS
-    'Valor do peso do vag„o';
+    'Valor do peso do vag√£o';
 
 ALTER TABLE t_sif_vagao
     ADD CONSTRAINT ck_sif_vagao_tipo_vagao CHECK ( tp_vagao = 'P'
@@ -370,36 +370,3 @@ CREATE SEQUENCE SQ_SIF_TRECHO INCREMENT BY 1 START WITH 1 MAXVALUE 999999 NOCACH
 CREATE SEQUENCE SQ_SIF_VAGAO INCREMENT BY 1 START WITH 1 MAXVALUE 999999 NOCACHE NOCYCLE;
 CREATE SEQUENCE SQ_SIF_VAGAO_EMPRESA INCREMENT BY 1 START WITH 1 MAXVALUE 99999 NOCACHE NOCYCLE;
 
--- Drop sequences	
-DROP SEQUENCE SQ_SIF_BATERIA;
-DROP SEQUENCE SQ_SIF_BATERIA_CARREG;
-DROP SEQUENCE SQ_SIF_CIDADE;
-DROP SEQUENCE SQ_SIF_CONCESSIONARIA;
-DROP SEQUENCE SQ_SIF_EMPRESA;
-DROP SEQUENCE SQ_SIF_ESTACAO;
-DROP SEQUENCE SQ_SIF_LINHA;
-DROP SEQUENCE SQ_SIF_LOCALIZA_ESTACAO;
-DROP SEQUENCE SQ_SIF_LOCOMOTIVA;
-DROP SEQUENCE SQ_SIF_REGISTRO;
-DROP SEQUENCE SQ_SIF_TRECHO;
-DROP SEQUENCE SQ_SIF_VAGAO;
-DROP SEQUENCE SQ_SIF_VAGAO_EMPRESA;
-
--- Drop table		
-DROP TABLE T_SIF_BATERIA CASCADE CONSTRAINTS;
-DROP TABLE T_SIF_BATERIA_CARREG	CASCADE CONSTRAINTS;
-DROP TABLE T_SIF_BATERIA_ESTACAO CASCADE CONSTRAINTS;
-DROP TABLE T_SIF_CIDADE	CASCADE CONSTRAINTS;
-DROP TABLE T_SIF_CONCESSIONARIA	CASCADE CONSTRAINTS;
-DROP TABLE T_SIF_EMPRESA CASCADE CONSTRAINTS;
-DROP TABLE T_SIF_ESTACAO CASCADE CONSTRAINTS;
-DROP TABLE T_SIF_ESTADO	CASCADE CONSTRAINTS;
-DROP TABLE T_SIF_LINHA CASCADE CONSTRAINTS;
-DROP TABLE T_SIF_LOCALIZA_ESTACAO CASCADE CONSTRAINTS;
-DROP TABLE T_SIF_LOCOMOTIVA CASCADE CONSTRAINTS;
-DROP TABLE T_SIF_LOC_BATERIA CASCADE CONSTRAINTS;
-DROP TABLE T_SIF_LOC_VAGAO CASCADE CONSTRAINTS;
-DROP TABLE T_SIF_REGISTRO CASCADE CONSTRAINTS;
-DROP TABLE T_SIF_TRECHO	CASCADE CONSTRAINTS;
-DROP TABLE T_SIF_VAGAO CASCADE CONSTRAINTS;
-DROP TABLE T_SIF_VAGAO_EMPRESA CASCADE CONSTRAINTS;
