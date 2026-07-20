@@ -25,8 +25,10 @@ up:
 seed: up
 	@echo "== Loading schema (DDL_FeVias.sql) =="
 	@$(EXEC) bash -lc "sqlplus -S $(CONN) @/workspace/DDL_FeVias.sql <<< exit"
-	@echo "== Loading data (DML_FeVias.sql) =="
+	@echo "== Loading base data (DML_FeVias.sql) =="
 	@$(EXEC) bash -lc "sqlplus -S $(CONN) @/workspace/DML_FeVias.sql <<< exit"
+	@echo "== Loading operational layer (DML_FeVias_operacao.sql) =="
+	@$(EXEC) bash -lc "sqlplus -S $(CONN) @/workspace/DML_FeVias_operacao.sql <<< exit"
 	@echo "== Seed complete =="
 
 query:

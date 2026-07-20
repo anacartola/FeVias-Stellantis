@@ -14,8 +14,8 @@
 **🌐 Language / Idioma / Langue / 语言:**
 [🇬🇧 English](#english) · [🇧🇷 Português](#portugues) · [🇫🇷 Français](#francais) · [🇨🇳 简体中文](#chinese)
 
-> The analytical **[Findings](#findings)** section is kept in English only; the
-> Portuguese, French and Chinese sections link to it.
+> The analytical results — **[Worked queries](#findings)** — are kept in English
+> only; the Portuguese, French and Chinese sections link to them.
 
 ---
 
@@ -89,7 +89,7 @@ erDiagram
         number   id_trecho FK
         number   id_loc_estacao FK
         varchar2 nm_estacao
-        varchar2 vr_carrega_bateria "S / N"
+        varchar2 vr_carrega_bateria
     }
     T_SIF_CONCESSIONARIA {
         number   id_concessionaria PK
@@ -113,12 +113,12 @@ erDiagram
     }
     T_SIF_VAGAO {
         number   id_vagao PK
-        varchar2 tp_vagao "P / O"
+        varchar2 tp_vagao
         number   vl_peso_vagao
     }
     T_SIF_LOC_VAGAO {
-        number   id_locomotiva PK,FK
-        number   id_vagao PK,FK
+        number   id_locomotiva PK
+        number   id_vagao PK
         number   vl_peso
         date     dt_atualizacao_peso
     }
@@ -128,7 +128,7 @@ erDiagram
         varchar2 cd_cnpj
     }
     T_SIF_VAGAO_EMPRESA {
-        number   id_empresa PK,FK
+        number   id_empresa PK
         number   id_locomotiva FK
         number   id_vagao FK
     }
@@ -143,13 +143,13 @@ erDiagram
         varchar2 ds_bateria
     }
     T_SIF_BATERIA_ESTACAO {
-        number   id_estacao PK,FK
-        number   id_bateria PK,FK
+        number   id_estacao PK
+        number   id_bateria PK
         date     dt_transferencia
     }
     T_SIF_LOC_BATERIA {
-        number   id_locomotiva PK,FK
-        number   id_bateria PK,FK
+        number   id_locomotiva PK
+        number   id_bateria PK
         date     dt_transferencia
     }
     T_SIF_REGISTRO {
@@ -195,106 +195,107 @@ current AI era:
 | `t_sif_registro` | Trip log: departure/arrival times and cities | `id_registro` **PK**, `id_locomotiva` FK, `id_estacao` FK |
 
 <a id="findings"></a>
-### Findings
+### Worked queries — what the model answers
 
-Five analytical queries live in [`queries/`](queries), one per file, each with a
-header comment stating the operational question it answers. The numbers below are
-computed from the **deterministic seed** in `DML_FeVias.sql` (fixed literal
-values, no randomness) and were **verified statically** — every table and column
-referenced exists in the DDL. Reproduce them live against Oracle with
-`make seed && make query` (see [Running it](#running-it)).
+This is a **proof of concept**: "what a Brazilian railway database would look
+like once a battery-swap system is deployed on it." The base reference data lives
+in `DML_FeVias.sql` (the original seed, left untouched). On top of it,
+`DML_FeVias_operacao.sql` adds a **synthetic ~1-week operating scenario** — it
+populates the five event tables that were empty and fixes two data bugs — so the
+five queries in [`queries/`](queries) return **real, reproducible numbers**.
 
-> **Data honesty up front:** the seed populates only **12 of the 17 tables**. The
-> five operational/event tables — `registro`, `bateria_estacao`, `loc_bateria`,
-> `loc_vagao`, `vagao_empresa` — are **empty**. Where a question needs them, the
-> finding says so rather than inventing a conclusion.
+> **Read this honestly:** the operating data is **synthetic and illustrative**.
+> These results show *what the model can answer* once it carries operational data,
+> not a claim about real railway operations. Numbers are computed from the
+> deterministic seed and reproduce with `make seed && make query` (see
+> [Running it](#running-it)); every table/column was verified against the DDL.
 
-#### 1. Battery fleet readiness — [`queries/01_battery_fleet_readiness.sql`](queries/01_battery_fleet_readiness.sql)
+#### 1. Locomotives running a low battery — [`queries/01_locomotive_battery_readiness.sql`](queries/01_locomotive_battery_readiness.sql)
 
-Which packs are below the 50% charge needed to be swap-ready?
+For each locomotive, the currently-mounted pack (most recent mount) and whether
+it's below the 50% swap-ready line.
 
-| id_bateria | ds_bateria | perc_carga_bateria | swap_status |
-|--:|---|--:|---|
-| 2 | Bateria 2 | 37 | BELOW THRESHOLD |
-| 3 | Bateria 3 | 44 | BELOW THRESHOLD |
-| 6 | Bateria 6 | 47 | BELOW THRESHOLD |
-| 7 | Bateria 7 | 52 | READY |
-| 1 | Bateria 1 | 75 | READY |
-| 4 | Bateria 4 | 75 | READY |
-| 5 | Bateria 5 | 92 | READY |
+| id_locomotiva | nm_locomotiva | id_bateria | perc_carga_bateria | status |
+|--:|---|--:|--:|---|
+| 3 | Estrada de Ferro Carajás | 6 | 47 | BELOW THRESHOLD |
+| 4 | Ferrovia Transnordestina Logística (FTL) | 7 | 52 | READY |
+| 1 | Ferrovia Transnordestina Logística | 4 | 75 | READY |
+| 2 | Locomotiva Malha Norte | 5 | 92 | READY |
 
-**Reading:** 3 of 7 packs (**43%**) sit below the 50% swap-ready line; the fleet
-mean is **60%**. It's a plausible readiness snapshot — but the charge values are
-static literals with no timestamp, so this is one moment, not a trend the data
-can support.
+**Reading:** **1 of 4** locomotives (Carajás, 47%) is running below the swap-ready
+line — the one to route to a charging station next. Because mounts are
+timestamped, this is the *current* state (most-recent mount per locomotive), not a
+static catalogue snapshot.
 
-#### 2. Charging gaps by segment — [`queries/02_charging_gaps_by_trecho.sql`](queries/02_charging_gaps_by_trecho.sql)
+#### 2. Busy swap hubs — [`queries/02_swap_station_throughput.sql`](queries/02_swap_station_throughput.sql)
 
-Is there any route segment with **no** charging station on it?
+How many battery transfers each station handled, and over what window.
 
-| id_trecho | nm_trecho | nr_tamanhokm | qt_estacoes | qt_estacoes_carregadoras |
+| id_estacao | nm_estacao | qt_transferencias | primeira | ultima |
+|--:|---|--:|---|---|
+| 1 | Porto de Itaquí | 3 | 2024-06-01 | 2024-06-05 |
+| 14 | Porto de Pecém | 1 | 2024-06-01 | 2024-06-01 |
+| 15 | Porto de Pecém | 1 | 2024-06-04 | 2024-06-04 |
+| 16 | Porto de Mucuípe | 1 | 2024-06-05 | 2024-06-05 |
+
+**Reading:** Porto de Itaquí is the clear hub — **3 of 6** transfers, spread across
+the week — while the Ceará ports saw single events. On real data this is exactly
+the signal for where to add charging bays first; here it reflects the synthetic
+seed, so read it as a demonstration of the ranking, not a capacity claim.
+
+#### 3. Charging coverage & range risk per corridor — [`queries/03_charging_coverage_by_trecho.sql`](queries/03_charging_coverage_by_trecho.sql)
+
+Distance between charging stations on each segment vs. a nominal 300 km range
+(only `S` stations count toward coverage).
+
+| id_trecho | nm_trecho | nr_tamanhokm | qt_estacoes | qt_carregadoras | km_por_carregadora | avaliacao |
+|--:|---|--:|--:|--:|--:|---|
+| 5 | Itaqui a Mucuripe | 1000 | 0 | 0 | — | NO COVERAGE |
+| 4 | Carajás a São Luís | 892 | 3 | 2 | 446.0 | RANGE RISK |
+| 3 | Rondonópolis a Santa Fé do Sul | 696 | 4 | 2 | 348.0 | RANGE RISK |
+| 2 | Itaqui a Mucuripe | 1000 | 4 | 4 | 250.0 | OK |
+| 1 | Itaqui a Pecém | 1000 | 5 | 5 | 200.0 | OK |
+
+**Reading:** real signal now. Trecho 5 has **no swap point at all**; trechos 4
+(446 km/charger) and 3 (348) **exceed the 300 km nominal range**, so a battery
+locomotive could strand between stations. Trechos 1–2 are fine. The gap is driven
+by the `N` (not-yet-electrified) stations on 3 and 4 — the query doing exactly its
+coverage-gap job. Caveat: km-per-charger assumes even spacing; the schema stores
+no station coordinates, so a real worst-case gap could be larger still.
+
+#### 4. Trip activity & in-progress runs — [`queries/04_trip_activity.sql`](queries/04_trip_activity.sql)
+
+Trips per locomotive, how many are still running, and average completed duration.
+
+| id_locomotiva | nm_locomotiva | total_viagens | em_andamento | horas_medias_concluidas |
 |--:|---|--:|--:|--:|
-| 5 | Itaqui a Mucuripe | 1000 | 0 | 0 |
-| 4 | Carajás a São Luís | 892 | 3 | 3 |
-| 2 | Itaqui a Mucuripe | 1000 | 4 | 4 |
-| 3 | Rondonópolis a Santa Fé do Sul | 696 | 4 | 4 |
-| 1 | Itaqui a Pecém | 1000 | 5 | 5 |
+| 1 | Ferrovia Transnordestina Logística | 3 | 1 | 4.3 |
+| 2 | Locomotiva Malha Norte | 2 | 0 | 7.3 |
+| 3 | Estrada de Ferro Carajás | 2 | 1 | 7 |
+| 4 | Ferrovia Transnordestina Logística (FTL) | 1 | 0 | 2 |
 
-**Reading:** one **1000 km** segment (trecho 5) has **zero** stations — a real
-coverage hole for a battery-only fleet. Every station that *does* exist is flagged
-chargeable (`S`); there is not a single `N` in the data, so the
-charging-vs-non-charging distinction can't actually be exercised on this seed.
+**Reading:** **8 trips** logged across the week, **2 still in progress**
+(Transnordestina and Carajás each have one running). Completed runs average
+2–7.3 h, Malha Norte's being longest. Null arrivals are treated as a first-class
+"in progress" state, not missing data.
 
-#### 3. Swap interval vs. range — [`queries/03_swap_interval_by_trecho.sql`](queries/03_swap_interval_by_trecho.sql)
+#### 5. Assigned payload vs. declared capacity — [`queries/05_assigned_vs_declared_payload.sql`](queries/05_assigned_vs_declared_payload.sql)
 
-On each segment, how far between charging stations, and does it exceed a nominal
-300 km battery range?
+Actual assigned wagons/payload per locomotive vs. the wagon count stored on the
+locomotive record.
 
-| id_trecho | nm_trecho | nr_tamanhokm | qt_estacoes_carregadoras | km_por_estacao | avaliacao_autonomia |
-|--:|---|--:|--:|--:|---|
-| 5 | Itaqui a Mucuripe | 1000 | 0 | — | NO COVERAGE |
-| 4 | Carajás a São Luís | 892 | 3 | 297.3 | OK |
-| 2 | Itaqui a Mucuripe | 1000 | 4 | 250.0 | OK |
-| 1 | Itaqui a Pecém | 1000 | 5 | 200.0 | OK |
-| 3 | Rondonópolis a Santa Fé do Sul | 696 | 4 | 174.0 | OK |
+| id_locomotiva | nm_locomotiva | nr_vagoes_declarado | vagoes_atribuidos | peso_total_atribuido |
+|--:|---|--:|--:|--:|
+| 2 | Locomotiva Malha Norte | 56 | 5 | 1800 |
+| 3 | Estrada de Ferro Carajás | 33 | 3 | 1800 |
+| 4 | Ferrovia Transnordestina Logística (FTL) | 13 | 1 | 700 |
+| 1 | Ferrovia Transnordestina Logística | 13 | 3 | 450 |
 
-**Reading:** among covered segments, spacing runs **174–297 km/station**, all
-under the 300 km nominal range — no range risk flagged, though trecho 4 is close.
-Caveat: km-per-station assumes even spacing; the schema stores no station ordering
-or coordinates, so a real gap between two consecutive stations could exceed the
-average and this proxy would miss it.
-
-#### 4. Wagon payload pool — [`queries/04_wagon_payload_pool.sql`](queries/04_wagon_payload_pool.sql)
-
-How much payload can the wagon pool haul, split by passenger vs. freight?
-
-| tp_vagao | tipo | qt_vagoes | peso_total | peso_medio | peso_min | peso_max |
-|---|---|--:|--:|--:|--:|--:|
-| O | Carga/Objetos | 12 | 4750 | 395.8 | 100 | 700 |
-
-**Reading:** the pool is **100% freight** — zero passenger wagons — despite the
-Stellantis brief's emphasis on population access; that's a data gap, not a design
-statement. Declared capacity is **4,750 t across 12 wagons**. Per-locomotive
-payload can't be computed because `t_sif_loc_vagao` (the wagon-to-locomotive
-assignment) is empty.
-
-#### 5. Operational telemetry coverage — [`queries/05_operational_telemetry_coverage.sql`](queries/05_operational_telemetry_coverage.sql)
-
-What operational history do we actually have?
-
-| fonte | qt |
-|---|--:|
-| Trip records (t_sif_registro) | 0 |
-| Battery→station transfers (t_sif_bateria_estacao) | 0 |
-| Battery→locomotive mounts (t_sif_loc_bateria) | 0 |
-| Locomotive-wagon links (t_sif_loc_vagao) | 0 |
-| Wagon-company links (t_sif_vagao_empresa) | 0 |
-
-**Reading:** the entire event layer is **empty**. Trips, swaps at stations,
-battery mounts and wagon assignments were never seeded, so every throughput,
-dwell-time and utilization KPI is currently **unanswerable**. This is the
-dataset's single biggest limitation and the first thing real instrumentation
-would fill.
+**Reading:** assigned wagons (1–5) sit far below the declared `nr_vagoes` (13–56).
+That gap is the point: `nr_vagoes` is a stored, hand-entered figure while
+`vagoes_atribuidos` is counted from real assignments — they drift, which is exactly
+the risk of the denormalized count flagged in [Design decisions](#design-decisions).
+Total assigned payload is **4,750 t** (the whole wagon pool).
 
 ### Design decisions
 
@@ -318,23 +319,30 @@ its own event attributes (`dt_transferencia`, `vl_peso`, …).
 - `t_sif_locomotiva.nr_vagoes` is a stored wagon count also derivable from
   `t_sif_loc_vagao` — a maintained aggregate for quick display.
 
-**As-built quirks worth flagging** (not changed — schema and data are out of scope):
+**As-built quirks worth flagging** (the **schema** is unchanged; data fixes are
+layered in `DML_FeVias_operacao.sql`, never editing the original seed):
 - `t_sif_vagao_empresa`'s primary key is `id_empresa` **alone**, so a company can
-  appear only once and cannot own more than one `(locomotive, wagon)` pair. With
-  real data this should be a composite key `(id_empresa, id_locomotiva, id_vagao)`.
+  appear only once and cannot own more than one `(locomotive, wagon)` pair — the
+  operational seed can therefore hold just two rows here. With real data this
+  should be a composite key `(id_empresa, id_locomotiva, id_vagao)`.
 - `t_sif_bateria` ↔ `t_sif_bateria_carreg` is effectively **1:1**; the separate
   table only earns its keep once charge cycles are historized over time.
-- Data-quality notes in the DML: concessionaire "Rumo S/A" is inserted twice; the
-  "Malha Paulista" line takes its `id_concessionaria` from the *line* sequence (a
-  `currval` slip); and every station is flagged chargeable. Left as-is because the
-  data is out of scope — flagged so a reader doesn't trust them blindly.
+- Data-quality bugs the queries surfaced, now **corrected in the operational
+  layer** (via `UPDATE`, leaving `DML_FeVias.sql` intact): the "Malha Paulista"
+  line took its `id_concessionaria` from the *line* sequence (a `currval` slip) —
+  repointed to Rumo S/A; and every station was flagged chargeable — three inland
+  stations set to `N` to model a phased rollout, which is what makes query 3's
+  coverage analysis meaningful. The duplicate "Rumo S/A" concessionaire row is
+  left in place and flagged, not silently deleted.
 
-**What I'd change with real data.** Historize charge readings with timestamps
-(turn the readiness snapshot into a trend); add coordinates or an ordinal position
-to stations so inter-swap distance is exact instead of an average; promote
-`vagao_empresa` to a composite key; and above all **populate the event tables**
-(`registro`, `bateria_estacao`, `loc_bateria`, `loc_vagao`) — they are the
-schema's whole operational value and are empty today.
+**What I'd change with real data.** The event tables now carry an **illustrative
+synthetic scenario**; a real deployment would stream **true telemetry** instead of
+a hand-built week. Beyond that: historize charge readings with timestamps (turn
+the readiness view into a trend); add coordinates or an ordinal position to
+stations so inter-swap distance is exact instead of an average; promote
+`vagao_empresa` to a composite key so a company can own more than one wagon; and
+reconcile `nr_vagoes` with actual assignments (query 5 shows the two already
+drift).
 
 <a id="running-it"></a>
 ### Running it
@@ -343,25 +351,30 @@ No account or license is needed — the setup uses Oracle Database Free in a
 container. Requirements: Docker (with Compose) and `make`.
 
 ```bash
-make seed     # start Oracle, load DDL_FeVias.sql then DML_FeVias.sql
+make seed     # start Oracle; load DDL, base data, then the operational layer
 make query    # run every file in queries/ and print the results
 make psql     # open an interactive SQL*Plus session
 make down     # stop the container (keeps data)
 make clean    # stop and delete the volume
 ```
 
-The DML file is ISO-8859-1 (Latin-1); the Makefile sets `NLS_LANG` so the client
-reads it in the right charset. **The SQL files are mounted read-only — the
-container never modifies the schema or the data.**
+`make seed` loads three files in order: `DDL_FeVias.sql` → `DML_FeVias.sql` →
+`DML_FeVias_operacao.sql`. The base DML is ISO-8859-1 (Latin-1); the Makefile sets
+`NLS_LANG` so the client reads it in the right charset. **The SQL files are mounted
+read-only — the container never edits them; the original `DML_FeVias.sql` is never
+modified.**
 
-Prefer a database you already have? Run `DDL_FeVias.sql`, then `DML_FeVias.sql`,
-then any file in `queries/` in an Oracle SQL client.
+Prefer a database you already have? Run `DDL_FeVias.sql`, `DML_FeVias.sql`,
+`DML_FeVias_operacao.sql`, then any file in `queries/` in an Oracle SQL client.
 
 ### Project files
 
 - **`DDL_FeVias.sql`** — schema: tables, constraints, comments, sequences.
 - **`DDL_Drop.sql`** — drops the whole schema for a clean rebuild.
-- **`DML_FeVias.sql`** — seed data (real Brazilian lines + fictional swap network).
+- **`DML_FeVias.sql`** — original base seed (real Brazilian lines + swap network),
+  left untouched.
+- **`DML_FeVias_operacao.sql`** — operational layer: data-bug fixes + a synthetic
+  ~1-week scenario populating the five event tables.
 - **`queries/`** — five analytical queries, one operational question each.
 - **`docker-compose.yml`, `Makefile`** — minimal, reproducible run environment.
 
@@ -445,7 +458,7 @@ erDiagram
         number   id_trecho FK
         number   id_loc_estacao FK
         varchar2 nm_estacao
-        varchar2 vr_carrega_bateria "S / N"
+        varchar2 vr_carrega_bateria
     }
     T_SIF_CONCESSIONARIA {
         number   id_concessionaria PK
@@ -469,12 +482,12 @@ erDiagram
     }
     T_SIF_VAGAO {
         number   id_vagao PK
-        varchar2 tp_vagao "P / O"
+        varchar2 tp_vagao
         number   vl_peso_vagao
     }
     T_SIF_LOC_VAGAO {
-        number   id_locomotiva PK,FK
-        number   id_vagao PK,FK
+        number   id_locomotiva PK
+        number   id_vagao PK
         number   vl_peso
         date     dt_atualizacao_peso
     }
@@ -484,7 +497,7 @@ erDiagram
         varchar2 cd_cnpj
     }
     T_SIF_VAGAO_EMPRESA {
-        number   id_empresa PK,FK
+        number   id_empresa PK
         number   id_locomotiva FK
         number   id_vagao FK
     }
@@ -499,13 +512,13 @@ erDiagram
         varchar2 ds_bateria
     }
     T_SIF_BATERIA_ESTACAO {
-        number   id_estacao PK,FK
-        number   id_bateria PK,FK
+        number   id_estacao PK
+        number   id_bateria PK
         date     dt_transferencia
     }
     T_SIF_LOC_BATERIA {
-        number   id_locomotiva PK,FK
-        number   id_bateria PK,FK
+        number   id_locomotiva PK
+        number   id_bateria PK
         date     dt_transferencia
     }
     T_SIF_REGISTRO {
@@ -556,10 +569,13 @@ era atual da IA:
 resultados analíticos →](#findings)**
 
 Em resumo: são cinco consultas em [`queries/`](queries), uma pergunta operacional
-cada. Um alerta importante que vale em qualquer idioma — o seed popula apenas
-**12 das 17 tabelas**; as cinco tabelas de eventos (`registro`, `bateria_estacao`,
-`loc_bateria`, `loc_vagao`, `vagao_empresa`) estão **vazias**, então toda métrica
-de throughput e utilização fica sem resposta até haver instrumentação real.
+cada. Como esta é uma **POC**, o seed base (`DML_FeVias.sql`) traz os dados de
+referência e uma camada operacional (`DML_FeVias_operacao.sql`) adiciona um
+**cenário sintético de ~1 semana** que popula as cinco tabelas de evento antes
+vazias e corrige dois bugs de dados — assim as queries devolvem números reais e
+reproduzíveis. Os dados operacionais são **sintéticos e ilustrativos**: mostram *o
+que o modelo consegue responder* quando carrega dados de operação, não uma
+afirmação sobre a operação ferroviária real.
 
 ### Decisões de projeto
 
@@ -583,24 +599,29 @@ muitos são resolvidas por tabelas de junção (`bateria_estacao`, `loc_bateria`
 - `t_sif_locomotiva.nr_vagoes` é uma contagem de vagões também derivável de
   `t_sif_loc_vagao` — um agregado mantido para exibição rápida.
 
-**Peculiaridades do modelo (não alteradas — schema e dados estão fora de escopo):**
+**Peculiaridades do modelo** (o **schema** não é alterado; as correções de dados
+ficam em `DML_FeVias_operacao.sql`, sem editar o seed original):
 - A chave primária de `t_sif_vagao_empresa` é **só** `id_empresa`, então uma
   empresa aparece uma única vez e não pode possuir mais de um par
-  `(locomotiva, vagão)`. Com dados reais, deveria ser chave composta
-  `(id_empresa, id_locomotiva, id_vagao)`.
+  `(locomotiva, vagão)` — por isso o seed operacional só cabe duas linhas aqui.
+  Com dados reais, deveria ser chave composta `(id_empresa, id_locomotiva, id_vagao)`.
 - `t_sif_bateria` ↔ `t_sif_bateria_carreg` é, na prática, **1:1**; a tabela
   separada só se justifica ao historiar ciclos de carga no tempo.
-- Qualidade de dados no DML: "Rumo S/A" é inserida duas vezes; a linha "Malha
-  Paulista" pega o `id_concessionaria` da sequência de *linha* (um deslize de
-  `currval`); e toda estação é marcada como carregável. Mantidos como estão
-  porque os dados estão fora de escopo — sinalizados para não confiar neles cegamente.
+- Bugs de dados que as queries acharam, agora **corrigidos na camada operacional**
+  (via `UPDATE`, deixando `DML_FeVias.sql` intacto): a linha "Malha Paulista"
+  pegava o `id_concessionaria` da sequência de *linha* (deslize de `currval`) —
+  reapontada para a Rumo S/A; e toda estação era carregável — três estações do
+  interior marcadas como `N` para simular um rollout por fases, o que dá sentido à
+  análise de cobertura da query 3. A linha duplicada da concessionária "Rumo S/A"
+  fica onde está e é sinalizada, não apagada silenciosamente.
 
-**O que eu mudaria com dados reais.** Historiar as leituras de carga com timestamp
-(transformar o snapshot em tendência); adicionar coordenadas ou posição ordinal às
-estações para que a distância entre trocas seja exata em vez de média; promover
-`vagao_empresa` a chave composta; e, acima de tudo, **popular as tabelas de
-eventos** (`registro`, `bateria_estacao`, `loc_bateria`, `loc_vagao`) — elas são
-todo o valor operacional do schema e hoje estão vazias.
+**O que eu mudaria com dados reais.** As tabelas de evento hoje carregam um
+**cenário sintético ilustrativo**; um deploy real transmitiria **telemetria de
+verdade** em vez de uma semana montada à mão. Além disso: historiar as leituras de
+carga com timestamp (transformar a visão em tendência); adicionar coordenadas ou
+posição ordinal às estações para que a distância entre trocas seja exata em vez de
+média; promover `vagao_empresa` a chave composta; e reconciliar `nr_vagoes` com as
+atribuições reais (a query 5 mostra que já divergem).
 
 ### Como executar
 
@@ -608,25 +629,30 @@ Não precisa de conta nem licença — o setup usa o Oracle Database Free em
 container. Requisitos: Docker (com Compose) e `make`.
 
 ```bash
-make seed     # sobe o Oracle, carrega DDL_FeVias.sql e depois DML_FeVias.sql
+make seed     # sobe o Oracle; carrega DDL, dados base e a camada operacional
 make query    # roda cada arquivo de queries/ e imprime os resultados
 make psql     # abre uma sessão interativa do SQL*Plus
 make down     # para o container (mantém os dados)
 make clean    # para e apaga o volume
 ```
 
-O arquivo DML é ISO-8859-1 (Latin-1); o Makefile define `NLS_LANG` para o cliente
-ler no charset correto. **Os arquivos SQL são montados como somente-leitura — o
-container nunca altera o schema nem os dados.**
+O `make seed` carrega três arquivos em ordem: `DDL_FeVias.sql` → `DML_FeVias.sql`
+→ `DML_FeVias_operacao.sql`. O DML base é ISO-8859-1 (Latin-1); o Makefile define
+`NLS_LANG` para o cliente ler no charset correto. **Os arquivos SQL são montados
+como somente-leitura — o container nunca os edita; o `DML_FeVias.sql` original
+jamais é modificado.**
 
-Prefere um banco que já tem? Execute `DDL_FeVias.sql`, depois `DML_FeVias.sql` e
-então qualquer arquivo de `queries/` em um cliente Oracle.
+Prefere um banco que já tem? Execute `DDL_FeVias.sql`, `DML_FeVias.sql`,
+`DML_FeVias_operacao.sql` e então qualquer arquivo de `queries/` em um cliente Oracle.
 
 ### Arquivos do projeto
 
 - **`DDL_FeVias.sql`** — schema: tabelas, constraints, comentários, sequences.
 - **`DDL_Drop.sql`** — apaga todo o schema para reconstrução limpa.
-- **`DML_FeVias.sql`** — dados (linhas brasileiras reais + rede de troca fictícia).
+- **`DML_FeVias.sql`** — seed base original (linhas brasileiras reais + rede de
+  troca), mantido intacto.
+- **`DML_FeVias_operacao.sql`** — camada operacional: correções de dados + cenário
+  sintético de ~1 semana populando as cinco tabelas de evento.
 - **`queries/`** — cinco consultas analíticas, uma pergunta operacional cada.
 - **`docker-compose.yml`, `Makefile`** — ambiente de execução mínimo e reprodutível.
 
@@ -711,7 +737,7 @@ erDiagram
         number   id_trecho FK
         number   id_loc_estacao FK
         varchar2 nm_estacao
-        varchar2 vr_carrega_bateria "S / N"
+        varchar2 vr_carrega_bateria
     }
     T_SIF_CONCESSIONARIA {
         number   id_concessionaria PK
@@ -735,12 +761,12 @@ erDiagram
     }
     T_SIF_VAGAO {
         number   id_vagao PK
-        varchar2 tp_vagao "P / O"
+        varchar2 tp_vagao
         number   vl_peso_vagao
     }
     T_SIF_LOC_VAGAO {
-        number   id_locomotiva PK,FK
-        number   id_vagao PK,FK
+        number   id_locomotiva PK
+        number   id_vagao PK
         number   vl_peso
         date     dt_atualizacao_peso
     }
@@ -750,7 +776,7 @@ erDiagram
         varchar2 cd_cnpj
     }
     T_SIF_VAGAO_EMPRESA {
-        number   id_empresa PK,FK
+        number   id_empresa PK
         number   id_locomotiva FK
         number   id_vagao FK
     }
@@ -765,13 +791,13 @@ erDiagram
         varchar2 ds_bateria
     }
     T_SIF_BATERIA_ESTACAO {
-        number   id_estacao PK,FK
-        number   id_bateria PK,FK
+        number   id_estacao PK
+        number   id_bateria PK
         date     dt_transferencia
     }
     T_SIF_LOC_BATERIA {
-        number   id_locomotiva PK,FK
-        number   id_bateria PK,FK
+        number   id_locomotiva PK
+        number   id_bateria PK
         date     dt_transferencia
     }
     T_SIF_REGISTRO {
@@ -822,11 +848,14 @@ projet, antérieur à l'ère actuelle de l'IA :
 **[Voir les résultats analytiques →](#findings)**
 
 En bref : cinq requêtes dans [`queries/`](queries), une question opérationnelle
-chacune. Un avertissement valable dans toutes les langues — le jeu de données ne
-remplit que **12 des 17 tables** ; les cinq tables d'événements (`registro`,
-`bateria_estacao`, `loc_bateria`, `loc_vagao`, `vagao_empresa`) sont **vides**, si
-bien que toute métrique de débit et d'utilisation reste sans réponse tant qu'il
-n'y a pas d'instrumentation réelle.
+chacune. Comme il s'agit d'une **POC**, le seed de base (`DML_FeVias.sql`) fournit
+les données de référence et une couche opérationnelle (`DML_FeVias_operacao.sql`)
+ajoute un **scénario synthétique d'~1 semaine** qui remplit les cinq tables
+d'événements auparavant vides et corrige deux bugs de données — les requêtes
+renvoient donc des chiffres réels et reproductibles. Les données opérationnelles
+sont **synthétiques et illustratives** : elles montrent *ce que le modèle sait
+répondre* une fois qu'il porte des données d'exploitation, pas une affirmation sur
+l'exploitation ferroviaire réelle.
 
 ### Choix de conception
 
@@ -850,26 +879,31 @@ ses attributs d'événement (`dt_transferencia`, `vl_peso`, …).
 - `t_sif_locomotiva.nr_vagoes` est un nombre de wagons également dérivable de
   `t_sif_loc_vagao` — un agrégat maintenu pour l'affichage rapide.
 
-**Particularités du modèle (non modifiées — schéma et données hors périmètre) :**
+**Particularités du modèle** (le **schéma** n'est pas modifié ; les correctifs de
+données sont dans `DML_FeVias_operacao.sql`, sans éditer le seed d'origine) :
 - La clé primaire de `t_sif_vagao_empresa` est **uniquement** `id_empresa` ; une
   entreprise n'apparaît donc qu'une fois et ne peut posséder plus d'un couple
-  `(locomotive, wagon)`. Avec des données réelles, il faudrait une clé composite
-  `(id_empresa, id_locomotiva, id_vagao)`.
+  `(locomotive, wagon)` — le seed opérationnel n'y tient donc que deux lignes. Avec
+  des données réelles, il faudrait une clé composite `(id_empresa, id_locomotiva, id_vagao)`.
 - `t_sif_bateria` ↔ `t_sif_bateria_carreg` est en pratique **1:1** ; la table
   séparée ne se justifie qu'en historisant les cycles de charge dans le temps.
-- Qualité des données dans le DML : « Rumo S/A » est inséré deux fois ; la ligne
-  « Malha Paulista » prend son `id_concessionaria` dans la séquence de *ligne* (un
-  écart de `currval`) ; et chaque station est marquée rechargeable. Laissés tels
-  quels car les données sont hors périmètre — signalés pour ne pas s'y fier
-  aveuglément.
+- Bugs de données révélés par les requêtes, désormais **corrigés dans la couche
+  opérationnelle** (par `UPDATE`, en laissant `DML_FeVias.sql` intact) : la ligne
+  « Malha Paulista » prenait son `id_concessionaria` dans la séquence de *ligne*
+  (écart de `currval`) — repointée vers Rumo S/A ; et chaque station était
+  rechargeable — trois stations de l'intérieur passées à `N` pour simuler un
+  déploiement par phases, ce qui donne son sens à l'analyse de couverture de la
+  requête 3. La ligne dupliquée du concessionnaire « Rumo S/A » reste en place et
+  est signalée, non supprimée en silence.
 
-**Ce que je changerais avec des données réelles.** Historiser les relevés de
-charge avec horodatage (transformer l'instantané en tendance) ; ajouter des
-coordonnées ou une position ordinale aux stations pour que la distance entre
-échanges soit exacte plutôt que moyenne ; promouvoir `vagao_empresa` en clé
-composite ; et surtout **remplir les tables d'événements** (`registro`,
-`bateria_estacao`, `loc_bateria`, `loc_vagao`) — elles constituent toute la valeur
-opérationnelle du schéma et sont vides aujourd'hui.
+**Ce que je changerais avec des données réelles.** Les tables d'événements portent
+aujourd'hui un **scénario synthétique illustratif** ; un déploiement réel diffuserait
+de la **vraie télémétrie** au lieu d'une semaine construite à la main. Au-delà :
+historiser les relevés de charge avec horodatage (transformer la vue en tendance) ;
+ajouter des coordonnées ou une position ordinale aux stations pour que la distance
+entre échanges soit exacte plutôt que moyenne ; promouvoir `vagao_empresa` en clé
+composite ; et réconcilier `nr_vagoes` avec les affectations réelles (la requête 5
+montre qu'elles divergent déjà).
 
 ### Exécution
 
@@ -877,25 +911,30 @@ Aucun compte ni licence requis — l'installation utilise Oracle Database Free e
 conteneur. Prérequis : Docker (avec Compose) et `make`.
 
 ```bash
-make seed     # démarre Oracle, charge DDL_FeVias.sql puis DML_FeVias.sql
+make seed     # démarre Oracle ; charge le DDL, les données de base et la couche opérationnelle
 make query    # exécute chaque fichier de queries/ et affiche les résultats
 make psql     # ouvre une session SQL*Plus interactive
 make down     # arrête le conteneur (conserve les données)
 make clean    # arrête et supprime le volume
 ```
 
-Le fichier DML est en ISO-8859-1 (Latin-1) ; le Makefile définit `NLS_LANG` pour
-que le client lise le bon jeu de caractères. **Les fichiers SQL sont montés en
-lecture seule — le conteneur ne modifie jamais le schéma ni les données.**
+`make seed` charge trois fichiers dans l'ordre : `DDL_FeVias.sql` → `DML_FeVias.sql`
+→ `DML_FeVias_operacao.sql`. Le DML de base est en ISO-8859-1 (Latin-1) ; le
+Makefile définit `NLS_LANG` pour le bon jeu de caractères. **Les fichiers SQL sont
+montés en lecture seule — le conteneur ne les édite jamais ; le `DML_FeVias.sql`
+d'origine n'est jamais modifié.**
 
-Vous préférez une base existante ? Exécutez `DDL_FeVias.sql`, puis
-`DML_FeVias.sql`, puis n'importe quel fichier de `queries/` dans un client Oracle.
+Vous préférez une base existante ? Exécutez `DDL_FeVias.sql`, `DML_FeVias.sql`,
+`DML_FeVias_operacao.sql`, puis n'importe quel fichier de `queries/` dans un client Oracle.
 
 ### Fichiers du projet
 
 - **`DDL_FeVias.sql`** — schéma : tables, contraintes, commentaires, séquences.
 - **`DDL_Drop.sql`** — supprime tout le schéma pour une reconstruction propre.
-- **`DML_FeVias.sql`** — données (lignes brésiliennes réelles + réseau fictif).
+- **`DML_FeVias.sql`** — seed de base d'origine (lignes brésiliennes réelles +
+  réseau d'échange), laissé intact.
+- **`DML_FeVias_operacao.sql`** — couche opérationnelle : correctifs de données +
+  scénario synthétique d'~1 semaine remplissant les cinq tables d'événements.
 - **`queries/`** — cinq requêtes analytiques, une question opérationnelle chacune.
 - **`docker-compose.yml`, `Makefile`** — environnement d'exécution minimal.
 
@@ -972,7 +1011,7 @@ erDiagram
         number   id_trecho FK
         number   id_loc_estacao FK
         varchar2 nm_estacao
-        varchar2 vr_carrega_bateria "S / N"
+        varchar2 vr_carrega_bateria
     }
     T_SIF_CONCESSIONARIA {
         number   id_concessionaria PK
@@ -996,12 +1035,12 @@ erDiagram
     }
     T_SIF_VAGAO {
         number   id_vagao PK
-        varchar2 tp_vagao "P / O"
+        varchar2 tp_vagao
         number   vl_peso_vagao
     }
     T_SIF_LOC_VAGAO {
-        number   id_locomotiva PK,FK
-        number   id_vagao PK,FK
+        number   id_locomotiva PK
+        number   id_vagao PK
         number   vl_peso
         date     dt_atualizacao_peso
     }
@@ -1011,7 +1050,7 @@ erDiagram
         varchar2 cd_cnpj
     }
     T_SIF_VAGAO_EMPRESA {
-        number   id_empresa PK,FK
+        number   id_empresa PK
         number   id_locomotiva FK
         number   id_vagao FK
     }
@@ -1026,13 +1065,13 @@ erDiagram
         varchar2 ds_bateria
     }
     T_SIF_BATERIA_ESTACAO {
-        number   id_estacao PK,FK
-        number   id_bateria PK,FK
+        number   id_estacao PK
+        number   id_bateria PK
         date     dt_transferencia
     }
     T_SIF_LOC_BATERIA {
-        number   id_locomotiva PK,FK
-        number   id_bateria PK,FK
+        number   id_locomotiva PK
+        number   id_bateria PK
         date     dt_transferencia
     }
     T_SIF_REGISTRO {
@@ -1080,10 +1119,11 @@ erDiagram
 
 📊 结果（**Findings**）部分仅保留英文。**[查看分析结果 →](#findings)**
 
-简而言之：[`queries/`](queries) 中有五条查询，每条对应一个运营问题。一条适用于所有语言的
-重要提示——种子数据只填充了 **17 张表中的 12 张**；五张事件表（`registro`、
-`bateria_estacao`、`loc_bateria`、`loc_vagao`、`vagao_empresa`）为**空**，因此在有真实
-埋点之前，所有吞吐量和利用率指标都无法回答。
+简而言之：[`queries/`](queries) 中有五条查询，每条对应一个运营问题。由于这是一个 **POC**，
+基础种子（`DML_FeVias.sql`）提供参考数据，运营层（`DML_FeVias_operacao.sql`）再补上一个
+**约一周的合成场景**，填充原先为空的五张事件表并修正两处数据缺陷——于是这些查询返回真实且
+可复现的数字。运营数据是**合成的、仅作示意**：它展示*模型在承载运营数据后能回答什么*，而非
+对真实铁路运营的论断。
 
 ### 设计决策
 
@@ -1103,20 +1143,21 @@ erDiagram
 - `t_sif_locomotiva.nr_vagoes` 是同样可由 `t_sif_loc_vagao` 推导的车厢计数——为快速展示而
   维护的聚合值。
 
-**值得指出的建模特点**（未改动——模式与数据不在范围内）：
+**值得指出的建模特点**（**模式**未改动；数据修正放在 `DML_FeVias_operacao.sql`，不编辑原始种子）：
 - `t_sif_vagao_empresa` 的主键**仅**为 `id_empresa`，因此一家企业只能出现一次，无法拥有
-  多个 `(机车, 车厢)` 组合。若用真实数据，应改为复合主键
+  多个 `(机车, 车厢)` 组合——所以运营种子在此只能放两行。若用真实数据，应改为复合主键
   `(id_empresa, id_locomotiva, id_vagao)`。
 - `t_sif_bateria` ↔ `t_sif_bateria_carreg` 实质上是 **1:1**；只有当需要按时间记录充电周期
   时，独立成表才有意义。
-- DML 中的数据质量问题："Rumo S/A" 被插入两次；"Malha Paulista" 线路的 `id_concessionaria`
-  取自*线路*序列（`currval` 失误）；且每个车站都被标为可充电。因数据不在范围内故保持原样
-  ——在此标注，以免读者盲目采信。
+- 查询暴露的数据缺陷，现已在**运营层修正**（通过 `UPDATE`，保持 `DML_FeVias.sql` 原封不动）：
+  "Malha Paulista" 线路的 `id_concessionaria` 取自*线路*序列（`currval` 失误）——已改指向
+  Rumo S/A；且每个车站都被标为可充电——已将三个内陆车站设为 `N`，模拟分阶段部署，这正是让
+  查询 3 的覆盖分析有意义的原因。重复的 "Rumo S/A" 运营商行保留原样并加以标注，而非静默删除。
 
-**若有真实数据我会怎么改。** 为充电读数加上时间戳（把快照变成趋势）；为车站添加坐标或顺序
-位置，使换电间距是精确值而非平均值；将 `vagao_empresa` 提升为复合主键；最重要的是**填充事件
-表**（`registro`、`bateria_estacao`、`loc_bateria`、`loc_vagao`）——它们是该模式全部的运营
-价值，如今却是空的。
+**若有真实数据我会怎么改。** 事件表现在承载一个**合成的示意场景**；真实部署会推送**真实遥测**
+而非手工搭的一周数据。此外：为充电读数加上时间戳（把视图变成趋势）；为车站添加坐标或顺序
+位置，使换电间距是精确值而非平均值；将 `vagao_empresa` 提升为复合主键；并让 `nr_vagoes` 与
+真实分配对账（查询 5 已显示两者出现偏差）。
 
 ### 如何运行
 
@@ -1124,24 +1165,26 @@ erDiagram
 与 `make`。
 
 ```bash
-make seed     # 启动 Oracle，加载 DDL_FeVias.sql，再加载 DML_FeVias.sql
+make seed     # 启动 Oracle；加载 DDL、基础数据，再加载运营层
 make query    # 运行 queries/ 中每个文件并打印结果
 make psql     # 打开交互式 SQL*Plus 会话
 make down     # 停止容器（保留数据）
 make clean    # 停止并删除数据卷
 ```
 
-DML 文件为 ISO-8859-1（Latin-1）；Makefile 设置了 `NLS_LANG`，让客户端以正确字符集读取。
-**SQL 文件以只读方式挂载——容器绝不会修改模式或数据。**
+`make seed` 按顺序加载三个文件：`DDL_FeVias.sql` → `DML_FeVias.sql` →
+`DML_FeVias_operacao.sql`。基础 DML 为 ISO-8859-1（Latin-1）；Makefile 设置了 `NLS_LANG`
+以正确字符集读取。**SQL 文件以只读方式挂载——容器绝不编辑它们；原始 `DML_FeVias.sql` 永不被修改。**
 
-已有数据库？在 Oracle 客户端中依次执行 `DDL_FeVias.sql`、`DML_FeVias.sql`，再运行
-`queries/` 中的任意文件即可。
+已有数据库？在 Oracle 客户端中依次执行 `DDL_FeVias.sql`、`DML_FeVias.sql`、
+`DML_FeVias_operacao.sql`，再运行 `queries/` 中的任意文件即可。
 
 ### 项目文件
 
 - **`DDL_FeVias.sql`** — 模式：表、约束、注释、序列。
 - **`DDL_Drop.sql`** — 删除整个模式以便干净重建。
-- **`DML_FeVias.sql`** — 数据（真实巴西线路 + 虚构换电网络）。
+- **`DML_FeVias.sql`** — 原始基础种子（真实巴西线路 + 换电网络），保持原封不动。
+- **`DML_FeVias_operacao.sql`** — 运营层：数据修正 + 填充五张事件表的约一周合成场景。
 - **`queries/`** — 五条分析查询，每条对应一个运营问题。
 - **`docker-compose.yml`、`Makefile`** — 最小化、可复现的运行环境。
 
