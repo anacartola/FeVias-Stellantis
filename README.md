@@ -89,7 +89,7 @@ erDiagram
         number   id_trecho FK
         number   id_loc_estacao FK
         varchar2 nm_estacao
-        varchar2 vr_carrega_bateria "S / N"
+        varchar2 vr_carrega_bateria
     }
     T_SIF_CONCESSIONARIA {
         number   id_concessionaria PK
@@ -113,12 +113,12 @@ erDiagram
     }
     T_SIF_VAGAO {
         number   id_vagao PK
-        varchar2 tp_vagao "P / O"
+        varchar2 tp_vagao
         number   vl_peso_vagao
     }
     T_SIF_LOC_VAGAO {
-        number   id_locomotiva PK,FK
-        number   id_vagao PK,FK
+        number   id_locomotiva PK
+        number   id_vagao PK
         number   vl_peso
         date     dt_atualizacao_peso
     }
@@ -128,7 +128,7 @@ erDiagram
         varchar2 cd_cnpj
     }
     T_SIF_VAGAO_EMPRESA {
-        number   id_empresa PK,FK
+        number   id_empresa PK
         number   id_locomotiva FK
         number   id_vagao FK
     }
@@ -143,13 +143,13 @@ erDiagram
         varchar2 ds_bateria
     }
     T_SIF_BATERIA_ESTACAO {
-        number   id_estacao PK,FK
-        number   id_bateria PK,FK
+        number   id_estacao PK
+        number   id_bateria PK
         date     dt_transferencia
     }
     T_SIF_LOC_BATERIA {
-        number   id_locomotiva PK,FK
-        number   id_bateria PK,FK
+        number   id_locomotiva PK
+        number   id_bateria PK
         date     dt_transferencia
     }
     T_SIF_REGISTRO {
@@ -445,7 +445,7 @@ erDiagram
         number   id_trecho FK
         number   id_loc_estacao FK
         varchar2 nm_estacao
-        varchar2 vr_carrega_bateria "S / N"
+        varchar2 vr_carrega_bateria
     }
     T_SIF_CONCESSIONARIA {
         number   id_concessionaria PK
@@ -469,12 +469,12 @@ erDiagram
     }
     T_SIF_VAGAO {
         number   id_vagao PK
-        varchar2 tp_vagao "P / O"
+        varchar2 tp_vagao
         number   vl_peso_vagao
     }
     T_SIF_LOC_VAGAO {
-        number   id_locomotiva PK,FK
-        number   id_vagao PK,FK
+        number   id_locomotiva PK
+        number   id_vagao PK
         number   vl_peso
         date     dt_atualizacao_peso
     }
@@ -484,7 +484,7 @@ erDiagram
         varchar2 cd_cnpj
     }
     T_SIF_VAGAO_EMPRESA {
-        number   id_empresa PK,FK
+        number   id_empresa PK
         number   id_locomotiva FK
         number   id_vagao FK
     }
@@ -499,13 +499,13 @@ erDiagram
         varchar2 ds_bateria
     }
     T_SIF_BATERIA_ESTACAO {
-        number   id_estacao PK,FK
-        number   id_bateria PK,FK
+        number   id_estacao PK
+        number   id_bateria PK
         date     dt_transferencia
     }
     T_SIF_LOC_BATERIA {
-        number   id_locomotiva PK,FK
-        number   id_bateria PK,FK
+        number   id_locomotiva PK
+        number   id_bateria PK
         date     dt_transferencia
     }
     T_SIF_REGISTRO {
@@ -711,7 +711,7 @@ erDiagram
         number   id_trecho FK
         number   id_loc_estacao FK
         varchar2 nm_estacao
-        varchar2 vr_carrega_bateria "S / N"
+        varchar2 vr_carrega_bateria
     }
     T_SIF_CONCESSIONARIA {
         number   id_concessionaria PK
@@ -735,12 +735,12 @@ erDiagram
     }
     T_SIF_VAGAO {
         number   id_vagao PK
-        varchar2 tp_vagao "P / O"
+        varchar2 tp_vagao
         number   vl_peso_vagao
     }
     T_SIF_LOC_VAGAO {
-        number   id_locomotiva PK,FK
-        number   id_vagao PK,FK
+        number   id_locomotiva PK
+        number   id_vagao PK
         number   vl_peso
         date     dt_atualizacao_peso
     }
@@ -750,7 +750,7 @@ erDiagram
         varchar2 cd_cnpj
     }
     T_SIF_VAGAO_EMPRESA {
-        number   id_empresa PK,FK
+        number   id_empresa PK
         number   id_locomotiva FK
         number   id_vagao FK
     }
@@ -765,13 +765,13 @@ erDiagram
         varchar2 ds_bateria
     }
     T_SIF_BATERIA_ESTACAO {
-        number   id_estacao PK,FK
-        number   id_bateria PK,FK
+        number   id_estacao PK
+        number   id_bateria PK
         date     dt_transferencia
     }
     T_SIF_LOC_BATERIA {
-        number   id_locomotiva PK,FK
-        number   id_bateria PK,FK
+        number   id_locomotiva PK
+        number   id_bateria PK
         date     dt_transferencia
     }
     T_SIF_REGISTRO {
@@ -972,7 +972,7 @@ erDiagram
         number   id_trecho FK
         number   id_loc_estacao FK
         varchar2 nm_estacao
-        varchar2 vr_carrega_bateria "S / N"
+        varchar2 vr_carrega_bateria
     }
     T_SIF_CONCESSIONARIA {
         number   id_concessionaria PK
@@ -996,12 +996,12 @@ erDiagram
     }
     T_SIF_VAGAO {
         number   id_vagao PK
-        varchar2 tp_vagao "P / O"
+        varchar2 tp_vagao
         number   vl_peso_vagao
     }
     T_SIF_LOC_VAGAO {
-        number   id_locomotiva PK,FK
-        number   id_vagao PK,FK
+        number   id_locomotiva PK
+        number   id_vagao PK
         number   vl_peso
         date     dt_atualizacao_peso
     }
@@ -1011,7 +1011,7 @@ erDiagram
         varchar2 cd_cnpj
     }
     T_SIF_VAGAO_EMPRESA {
-        number   id_empresa PK,FK
+        number   id_empresa PK
         number   id_locomotiva FK
         number   id_vagao FK
     }
@@ -1026,13 +1026,13 @@ erDiagram
         varchar2 ds_bateria
     }
     T_SIF_BATERIA_ESTACAO {
-        number   id_estacao PK,FK
-        number   id_bateria PK,FK
+        number   id_estacao PK
+        number   id_bateria PK
         date     dt_transferencia
     }
     T_SIF_LOC_BATERIA {
-        number   id_locomotiva PK,FK
-        number   id_bateria PK,FK
+        number   id_locomotiva PK
+        number   id_bateria PK
         date     dt_transferencia
     }
     T_SIF_REGISTRO {
