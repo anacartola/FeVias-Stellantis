@@ -164,6 +164,14 @@ erDiagram
     }
 ```
 
+### Project Development in Oracle SQL
+
+The original diagram from when the database was first built in Oracle SQL — kept
+here as the authentic record of the project's original design work, predating the
+current AI era:
+
+![FeVias schema built in Oracle SQL](https://github.com/anacartola/FeVias-Stellantis/assets/136506553/39e54253-7e39-44df-a513-c788df7e8400)
+
 ### Data dictionary
 
 | Table | Purpose | Key columns |
@@ -512,6 +520,14 @@ erDiagram
     }
 ```
 
+### Desenvolvimento do projeto em Oracle SQL
+
+O diagrama original de quando o banco foi construído em Oracle SQL — mantido aqui
+como registro autêntico do trabalho de modelagem original do projeto, anterior à
+era atual da IA:
+
+![Schema FeVias construído em Oracle SQL](https://github.com/anacartola/FeVias-Stellantis/assets/136506553/39e54253-7e39-44df-a513-c788df7e8400)
+
 ### Dicionário de dados
 
 | Tabela | Finalidade | Colunas-chave |
@@ -770,6 +786,14 @@ erDiagram
     }
 ```
 
+### Développement du projet en Oracle SQL
+
+Le diagramme original de la première conception de la base en Oracle SQL —
+conservé ici comme trace authentique du travail de modélisation d'origine du
+projet, antérieur à l'ère actuelle de l'IA :
+
+![Schéma FeVias construit en Oracle SQL](https://github.com/anacartola/FeVias-Stellantis/assets/136506553/39e54253-7e39-44df-a513-c788df7e8400)
+
 ### Dictionnaire de données
 
 | Table | Rôle | Colonnes-clés |
@@ -1022,6 +1046,13 @@ erDiagram
         varchar2 cd_cidade_chegada
     }
 ```
+
+### 在 Oracle SQL 中的项目开发
+
+数据库最初在 Oracle SQL 中构建时的原始图示——保留于此，作为项目最初建模工作的真实记录，
+早于当前的 AI 时代：
+
+![在 Oracle SQL 中构建的 FeVias 模式](https://github.com/anacartola/FeVias-Stellantis/assets/136506553/39e54253-7e39-44df-a513-c788df7e8400)
 
 ### 数据字典
 
