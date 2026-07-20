@@ -959,11 +959,11 @@ MIT. Voir [LICENSE](LICENSE). Questions :
 
 ### 概述
 
-Stellantis 集团向 FIAP 的学生发起挑战：**"技术与创新如何助力出行：提升效率、减少事故、
+Stellantis 集团向 FIAP 的学生发起挑战：**"技术与创新如何助力出行——提升效率、减少事故、
 扩大民众可及性，并推动真正的智慧社会与智慧出行？"**
 
 **FeVias** 的答案是一套面向**清洁能源与可充电电池**铁路的数据库。机车不再依赖燃料供应链：
-它们携带电池组，并**在沿线车站换取已充电的电池**。该模式完整刻画了整体图景：铁路网络
+它们携带电池组，并**在沿线车站换取已充电的电池**。该模式完整刻画了整体图景——铁路网络
 （特许运营商 → 线路 → 区段 → 车站）、车辆装备（机车、车厢、电池），以及将它们连接起来的
 运营事件（行程、电池转移、车厢分配）。
 
@@ -975,7 +975,7 @@ Stellantis 集团向 FIAP 的学生发起挑战：**"技术与创新如何助力
 
 ### 数据模型（ERD）
 
-下图直接由 `DDL_FeVias.sql` 生成：共 17 张表，主键、外键与基数完全依照约束声明。
+下图直接由 `DDL_FeVias.sql` 生成——共 17 张表，主键、外键与基数完全依照约束声明。
 `||--o{` 表示"一对零或多"；`||--o|` 表示"一对零或一"。
 
 ```mermaid
@@ -1094,7 +1094,7 @@ erDiagram
 
 ### 在 Oracle SQL 中的项目开发
 
-数据库最初在 Oracle SQL 中构建时的原始图示，保留于此，作为项目最初建模工作的真实记录，
+数据库最初在 Oracle SQL 中构建时的原始图示——保留于此，作为项目最初建模工作的真实记录，
 早于当前的 AI 时代：
 
 ![在 Oracle SQL 中构建的 FeVias 模式](https://github.com/anacartola/FeVias-Stellantis/assets/136506553/39e54253-7e39-44df-a513-c788df7e8400)
@@ -1127,14 +1127,14 @@ erDiagram
 
 简而言之：[`queries/`](queries) 中有五条查询，每条对应一个运营问题。由于这是一个 **POC**，
 基础种子（`DML_FeVias.sql`）提供参考数据，运营层（`DML_FeVias_operacao.sql`）再补上一个
-**约一周的合成场景**，填充原先为空的五张事件表并修正两处数据缺陷，于是这些查询返回真实且
+**约一周的合成场景**，填充原先为空的五张事件表并修正两处数据缺陷——于是这些查询返回真实且
 可复现的数字。运营数据是**合成的、仅作示意**：它展示*模型在承载运营数据后能回答什么*，而非
 对真实铁路运营的论断。
 
 ### 设计决策
 
-**为何这样归一化。** 地理信息是一条清晰的 3NF 查找链
-（`estado → cidade → localiza_estacao → estacao`），网络层级与之对应：
+**为何这样归一化。** 地理信息是一条清晰的 3NF 查找链——
+`estado → cidade → localiza_estacao → estacao`——网络层级与之对应：
 `concessionaria → linha → trecho → estacao`。电池的*身份*（`t_sif_bateria`）与其*充电状态*
 （`t_sif_bateria_carreg`）分离，使读数变化时无需改写身份行。多对多的运营关系通过连接表
 （`bateria_estacao`、`loc_bateria`、`loc_vagao`、`vagao_empresa`）解决，每张表都携带各自的
@@ -1145,19 +1145,19 @@ erDiagram
   出发/到达城市。行程日志写入频繁且处于读取热路径；就地保存城市名可避免每次读取都做
   `estacao → localiza_estacao → cidade` 连接。代价：可能与 `cidade` 表产生偏差。
 - `t_sif_localiza_estacao.nm_localizacao` 是自由文本，重复了已可经 `id_cidade` 获取的
-  城市/州信息，保留用于人类可读的车站地址。
-- `t_sif_locomotiva.nr_vagoes` 是同样可由 `t_sif_loc_vagao` 推导的车厢计数，为快速展示而
+  城市/州信息——保留用于人类可读的车站地址。
+- `t_sif_locomotiva.nr_vagoes` 是同样可由 `t_sif_loc_vagao` 推导的车厢计数——为快速展示而
   维护的聚合值。
 
 **值得指出的建模特点**（**模式**未改动；数据修正放在 `DML_FeVias_operacao.sql`，不编辑原始种子）：
 - `t_sif_vagao_empresa` 的主键**仅**为 `id_empresa`，因此一家企业只能出现一次，无法拥有
-  多个 `(机车, 车厢)` 组合，所以运营种子在此只能放两行。若用真实数据，应改为复合主键
+  多个 `(机车, 车厢)` 组合——所以运营种子在此只能放两行。若用真实数据，应改为复合主键
   `(id_empresa, id_locomotiva, id_vagao)`。
 - `t_sif_bateria` 与 `t_sif_bateria_carreg` 实质上是 **1:1**；只有当需要按时间记录充电周期
   时，独立成表才有意义。
 - 查询暴露的数据缺陷，现已在**运营层修正**（通过 `UPDATE`，保持 `DML_FeVias.sql` 原封不动）：
-  "Malha Paulista" 线路的 `id_concessionaria` 取自*线路*序列（`currval` 失误），已改指向
-  Rumo S/A；且每个车站都被标为可充电，故已将三个内陆车站设为 `N`，模拟分阶段部署，这正是让
+  "Malha Paulista" 线路的 `id_concessionaria` 取自*线路*序列（`currval` 失误）——已改指向
+  Rumo S/A；且每个车站都被标为可充电——已将三个内陆车站设为 `N`，模拟分阶段部署，这正是让
   查询 3 的覆盖分析有意义的原因。重复的 "Rumo S/A" 运营商行保留原样并加以标注，而非静默删除。
 
 **若有真实数据我会怎么改。** 事件表现在承载一个**合成的示意场景**；真实部署会推送**真实遥测**
@@ -1167,7 +1167,7 @@ erDiagram
 
 ### 如何运行
 
-无需账号或许可证；环境使用容器化的 Oracle Database Free。前置条件：Docker（含 Compose）
+无需账号或许可证——环境使用容器化的 Oracle Database Free。前置条件：Docker（含 Compose）
 与 `make`。
 
 ```bash
@@ -1180,7 +1180,7 @@ make clean    # 停止并删除数据卷
 
 `make seed` 按顺序加载三个文件：`DDL_FeVias.sql`、`DML_FeVias.sql`、
 `DML_FeVias_operacao.sql`。基础 DML 为 ISO-8859-1（Latin-1）；Makefile 设置了 `NLS_LANG`
-以正确字符集读取。**SQL 文件以只读方式挂载，容器绝不编辑它们；原始 `DML_FeVias.sql` 永不被修改。**
+以正确字符集读取。**SQL 文件以只读方式挂载——容器绝不编辑它们；原始 `DML_FeVias.sql` 永不被修改。**
 
 已有数据库？在 Oracle 客户端中依次执行 `DDL_FeVias.sql`、`DML_FeVias.sql`、
 `DML_FeVias_operacao.sql`，再运行 `queries/` 中的任意文件即可。
@@ -1196,7 +1196,7 @@ make clean    # 停止并删除数据卷
 
 ### 许可证与联系方式
 
-MIT。见 [LICENSE](LICENSE)。如有疑问：
+MIT——见 [LICENSE](LICENSE)。如有疑问：
 [anacarolina.cartola@gmail.com](mailto:anacarolina.cartola@gmail.com)。
 
 </details>
