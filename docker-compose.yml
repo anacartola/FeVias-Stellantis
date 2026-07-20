@@ -1,0 +1,22 @@
+# Minimal Oracle setup to run the FeVias schema, data and analytical queries.
+# Uses Oracle Database Free (the free edition) so no license or account is needed.
+# See the Makefile for the seed/query workflow: `make seed && make query`.
+
+services:
+  oracle:
+    image: gvenzl/oracle-free:slim
+    container_name: fevias-oracle
+    environment:
+      ORACLE_PASSWORD: fevias      # SYS / SYSTEM password
+      APP_USER: fevias             # application schema the scripts load into
+      APP_USER_PASSWORD: fevias
+    ports:
+      - "1521:1521"
+    volumes:
+      # Repo mounted read-only; the SQL files are never modified by the container.
+      - ./:/workspace:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 40
